@@ -9,6 +9,7 @@ DUMMY_DATA_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'dummy_d
 
 def setup_sqlite():
     print("Setting up SQLite...")
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
@@ -27,14 +28,17 @@ def setup_sqlite():
 
 def setup_chroma():
     print("Setting up ChromaDB...")
+    os.makedirs(os.path.dirname(CHROMA_PATH), exist_ok=True)
     client = chromadb.PersistentClient(path=CHROMA_PATH)
     
-    # We will use a default embedding function for simplicity
-    emb_fn = embedding_functions.DefaultEmbeddingFunction()
+    # We will use Google's embedding function to avoid downloading massive ONNX models
+    from backend.embeddings import LangchainGoogleEmbeddingFunction
+    api_key = os.getenv("GOOGLE_API_KEY", "your-proxy-token")
+    emb_fn = LangchainGoogleEmbeddingFunction(api_key=api_key)
     
     collection = client.get_or_create_collection(
         name="enterprise_knowledge",
-        embedding_function=emb_fn
+        embedding_function=emb_fn  # type: ignore
     )
 
     # Read markdown files

@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 import sqlite3
 import operator
-from typing import TypedDict, List, Dict, Any, Annotated
+from typing import List, Dict, Any, Annotated
+from typing_extensions import TypedDict
 from fastapi import FastAPI
 from pydantic import BaseModel
 from langgraph.graph import StateGraph, END
@@ -19,12 +20,9 @@ app = FastAPI()
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'audit.db')
 CHROMA_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'chroma_db')
 
-# Global ChromaDB Client (Prevents SQLite file lock hanging)
-chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
-chroma_collection = chroma_client.get_or_create_collection(name="enterprise_knowledge")
-
 # Dynamic Proxy Injection Model Configuration
 import os
+from backend.embeddings import LangchainGoogleEmbeddingFunction
 
 api_key = os.getenv("GOOGLE_API_KEY")
 if not api_key:
@@ -32,20 +30,40 @@ if not api_key:
     print("WARNING: GOOGLE_API_KEY environment variable is missing! Inject via Docker environment variables.")
     api_key = "your-proxy-token"
 
+# Global ChromaDB Client (Prevents SQLite file lock hanging)
+chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+emb_fn = LangchainGoogleEmbeddingFunction(api_key=api_key)
+chroma_collection = chroma_client.get_or_create_collection(name="enterprise_knowledge", embedding_function=emb_fn)  # type: ignore
+
 proxy_url = os.getenv("LITELLM_URL") # E.g., http://litellm:4000
 client_opts = {}
 
 if proxy_url:
-    from google.api_core.client_options import ClientOptions
-    client_opts = {"client_options": ClientOptions(api_endpoint=proxy_url)}
+    client_opts = {"client_options": {"api_endpoint": proxy_url}}
 
 # LLM (Using ultra-fast, low-rate Flash-Lite model for tight loops)
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash-lite", 
+primary_llm = ChatGoogleGenerativeAI(
+    model="gemini-3.1-flash-lite", 
     google_api_key=api_key,
     temperature=0,
     **client_opts
 )
+
+backup_llm_1 = ChatGoogleGenerativeAI(
+    model="gemini-3.5-flash", 
+    google_api_key=api_key,
+    temperature=0,
+    **client_opts
+)
+
+backup_llm_2 = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash", 
+    google_api_key=api_key,
+    temperature=0,
+    **client_opts
+)
+
+llm = primary_llm.with_fallbacks([backup_llm_1, backup_llm_2])
 
 class AgentState(TypedDict):
     ticket_query: str
@@ -184,8 +202,8 @@ def audit_node(state: AgentState):
         VALUES (?, ?, ?, ?)
     """, (
         "TICKET-" + str(hash(state["ticket_query"]))[-5:], 
-        str(state["ticket_query"]), 
-        str(state["final_resolution"]), 
+        state["ticket_query"], 
+        state["final_resolution"], 
         json.dumps(state["decision_trace"])
     ))
     conn.commit()
@@ -213,7 +231,7 @@ def route_after_evaluation(state: AgentState):
     return "audit" # Success route
 
 # --- Graph Setup ---
-workflow = StateGraph(AgentState)
+workflow = StateGraph(AgentState)  # type: ignore
 
 workflow.add_node("retriever", retriever_node)
 workflow.add_node("reasoner", reasoner_node)

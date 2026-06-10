@@ -3,7 +3,7 @@ import requests
 import os
 
 # API URL (Uses environment variable for Docker compatibility, defaults to localhost)
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://127.0.0.1:8000")
 
 st.set_page_config(layout="wide", page_title="ContextGraph AI", page_icon="🏢")
 
@@ -46,7 +46,7 @@ with col_left:
             with st.spinner("Agents are resolving the incident..."):
                 try:
                     # Point to the FastAPI backend
-                    response = requests.post("http://localhost:8000/resolve_incident", json={"query": ticket_query})
+                    response = requests.post(f"{BACKEND_URL}/resolve_incident", json={"query": ticket_query})
                     response.raise_for_status()
                     
                     data = response.json()
