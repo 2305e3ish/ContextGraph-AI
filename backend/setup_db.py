@@ -31,12 +31,13 @@ def setup_chroma():
     os.makedirs(os.path.dirname(CHROMA_PATH), exist_ok=True)
     client = chromadb.PersistentClient(path=CHROMA_PATH)
     
-    # We will use a default embedding function for simplicity
-    emb_fn = embedding_functions.DefaultEmbeddingFunction()
+    # We will use Google's embedding function to avoid downloading massive ONNX models
+    api_key = os.getenv("GOOGLE_API_KEY", "your-proxy-token")
+    emb_fn = embedding_functions.GoogleGenerativeAiEmbeddingFunction(api_key=api_key)
     
     collection = client.get_or_create_collection(
         name="enterprise_knowledge",
-        embedding_function=emb_fn
+        embedding_function=emb_fn  # type: ignore
     )
 
     # Read markdown files

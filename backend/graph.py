@@ -20,18 +20,20 @@ app = FastAPI()
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'audit.db')
 CHROMA_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'chroma_db')
 
-# Global ChromaDB Client (Prevents SQLite file lock hanging)
-chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
-chroma_collection = chroma_client.get_or_create_collection(name="enterprise_knowledge")
-
 # Dynamic Proxy Injection Model Configuration
 import os
+from chromadb.utils import embedding_functions
 
 api_key = os.getenv("GOOGLE_API_KEY")
 if not api_key:
     # Fallback to prevent crash, alerting you in the container logs
     print("WARNING: GOOGLE_API_KEY environment variable is missing! Inject via Docker environment variables.")
     api_key = "your-proxy-token"
+
+# Global ChromaDB Client (Prevents SQLite file lock hanging)
+chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+emb_fn = embedding_functions.GoogleGenerativeAiEmbeddingFunction(api_key=api_key)
+chroma_collection = chroma_client.get_or_create_collection(name="enterprise_knowledge", embedding_function=emb_fn)  # type: ignore
 
 proxy_url = os.getenv("LITELLM_URL") # E.g., http://litellm:4000
 client_opts = {}
@@ -229,7 +231,7 @@ def route_after_evaluation(state: AgentState):
     return "audit" # Success route
 
 # --- Graph Setup ---
-workflow = StateGraph(AgentState)
+workflow = StateGraph(AgentState)  # type: ignore
 
 workflow.add_node("retriever", retriever_node)
 workflow.add_node("reasoner", reasoner_node)
