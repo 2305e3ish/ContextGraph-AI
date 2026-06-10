@@ -32,8 +32,9 @@ def setup_chroma():
     client = chromadb.PersistentClient(path=CHROMA_PATH)
     
     # We will use Google's embedding function to avoid downloading massive ONNX models
+    from backend.embeddings import LangchainGoogleEmbeddingFunction
     api_key = os.getenv("GOOGLE_API_KEY", "your-proxy-token")
-    emb_fn = embedding_functions.GoogleGenerativeAiEmbeddingFunction(api_key=api_key)
+    emb_fn = LangchainGoogleEmbeddingFunction(api_key=api_key)
     
     collection = client.get_or_create_collection(
         name="enterprise_knowledge",

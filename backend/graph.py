@@ -22,7 +22,7 @@ CHROMA_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'chroma_db')
 
 # Dynamic Proxy Injection Model Configuration
 import os
-from chromadb.utils import embedding_functions
+from backend.embeddings import LangchainGoogleEmbeddingFunction
 
 api_key = os.getenv("GOOGLE_API_KEY")
 if not api_key:
@@ -32,7 +32,7 @@ if not api_key:
 
 # Global ChromaDB Client (Prevents SQLite file lock hanging)
 chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
-emb_fn = embedding_functions.GoogleGenerativeAiEmbeddingFunction(api_key=api_key)
+emb_fn = LangchainGoogleEmbeddingFunction(api_key=api_key)
 chroma_collection = chroma_client.get_or_create_collection(name="enterprise_knowledge", embedding_function=emb_fn)  # type: ignore
 
 proxy_url = os.getenv("LITELLM_URL") # E.g., http://litellm:4000
