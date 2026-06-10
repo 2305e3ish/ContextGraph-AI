@@ -41,7 +41,7 @@ if proxy_url:
 
 # LLM (Using ultra-fast, low-rate Flash-Lite model for tight loops)
 llm = ChatGoogleGenerativeAI(
-    model="gemini-3.1-flash-lite", 
+    model="gemini-2.0-flash-lite", 
     google_api_key=api_key,
     temperature=0,
     **client_opts
@@ -204,7 +204,7 @@ def audit_node(state: AgentState):
 # --- Routing ---
 def route_after_evaluation(state: AgentState):
     # Short-circuit if the loop count hits the circuit breaker threshold
-    if state.get("loop_count", 0) >= 3:
+    if state.get("loop_count", 0) >= 1:
         return "audit" # Force push to storage even if it failed verification
         
     if state.get("current_status") == "FAIL":
