@@ -1,6 +1,6 @@
 #!/bin/bash
 # Initialize the SQLite databases and vector store
-python backend/setup_db.py
+python -m backend.setup_db
 
 # Start the FastAPI backend server in the background
 # It will run on port 8000 locally inside this container
