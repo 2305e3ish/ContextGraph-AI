@@ -46,7 +46,7 @@ with col_left:
             with st.spinner("Agents are resolving the incident..."):
                 try:
                     # Point to the FastAPI backend
-                    response = requests.post("http://localhost:8000/resolve_incident", json={"query": ticket_query})
+                    response = requests.post(f"{BACKEND_URL}/resolve_incident", json={"query": ticket_query})
                     response.raise_for_status()
                     
                     data = response.json()

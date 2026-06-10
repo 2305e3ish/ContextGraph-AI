@@ -9,6 +9,7 @@ DUMMY_DATA_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'dummy_d
 
 def setup_sqlite():
     print("Setting up SQLite...")
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
@@ -27,6 +28,7 @@ def setup_sqlite():
 
 def setup_chroma():
     print("Setting up ChromaDB...")
+    os.makedirs(os.path.dirname(CHROMA_PATH), exist_ok=True)
     client = chromadb.PersistentClient(path=CHROMA_PATH)
     
     # We will use a default embedding function for simplicity

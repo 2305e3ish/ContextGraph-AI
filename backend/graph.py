@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 import sqlite3
 import operator
-from typing import TypedDict, List, Dict, Any, Annotated
+from typing import List, Dict, Any, Annotated
+from typing_extensions import TypedDict
 from fastapi import FastAPI
 from pydantic import BaseModel
 from langgraph.graph import StateGraph, END
@@ -40,12 +41,28 @@ if proxy_url:
     client_opts = {"client_options": ClientOptions(api_endpoint=proxy_url)}
 
 # LLM (Using ultra-fast, low-rate Flash-Lite model for tight loops)
-llm = ChatGoogleGenerativeAI(
+primary_llm = ChatGoogleGenerativeAI(
     model="gemini-3.1-flash-lite", 
     google_api_key=api_key,
     temperature=0,
     **client_opts
 )
+
+backup_llm_1 = ChatGoogleGenerativeAI(
+    model="gemini-3.5-flash", 
+    google_api_key=api_key,
+    temperature=0,
+    **client_opts
+)
+
+backup_llm_2 = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash", 
+    google_api_key=api_key,
+    temperature=0,
+    **client_opts
+)
+
+llm = primary_llm.with_fallbacks([backup_llm_1, backup_llm_2])
 
 class AgentState(TypedDict):
     ticket_query: str
@@ -184,8 +201,8 @@ def audit_node(state: AgentState):
         VALUES (?, ?, ?, ?)
     """, (
         "TICKET-" + str(hash(state["ticket_query"]))[-5:], 
-        str(state["ticket_query"]), 
-        str(state["final_resolution"]), 
+        state["ticket_query"], 
+        state["final_resolution"], 
         json.dumps(state["decision_trace"])
     ))
     conn.commit()
