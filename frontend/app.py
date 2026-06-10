@@ -3,7 +3,7 @@ import requests
 import os
 
 # API URL (Uses environment variable for Docker compatibility, defaults to localhost)
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://127.0.0.1:8000")
 
 st.set_page_config(layout="wide", page_title="ContextGraph AI", page_icon="🏢")
 
