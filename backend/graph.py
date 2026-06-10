@@ -37,8 +37,7 @@ proxy_url = os.getenv("LITELLM_URL") # E.g., http://litellm:4000
 client_opts = {}
 
 if proxy_url:
-    from google.api_core.client_options import ClientOptions
-    client_opts = {"client_options": ClientOptions(api_endpoint=proxy_url)}
+    client_opts = {"client_options": {"api_endpoint": proxy_url}}
 
 # LLM (Using ultra-fast, low-rate Flash-Lite model for tight loops)
 primary_llm = ChatGoogleGenerativeAI(
