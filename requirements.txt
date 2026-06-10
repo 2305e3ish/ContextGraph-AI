@@ -10,3 +10,4 @@ pydantic
 python-dotenv
 google-api-core
 google-auth
+google-generativeai
