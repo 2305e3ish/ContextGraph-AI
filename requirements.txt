@@ -1,0 +1,10 @@
+fastapi[standard]
+uvicorn
+langgraph
+langchain
+langchain_google_genai
+chromadb
+sqlalchemy
+streamlit
+pydantic
+python-dotenv
