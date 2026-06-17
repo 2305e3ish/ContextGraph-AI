@@ -74,12 +74,6 @@ uvicorn backend.graph:app --port 8000 --reload
 streamlit run frontend/app.py
 ```
 
----
-
-> 🔗 **LIVE DEMO LINK**: `[Enter your deployed link here]`
-
----
-
 ## 🧪 Automated Testing
 
 We have built an exhaustive `pytest` automation suite targeting multi-agent behavioral boundaries, concurrency, and SQLite schema integrity.
